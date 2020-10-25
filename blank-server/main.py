@@ -1,6 +1,6 @@
 import tornado.ioloop
 import tornado.web
-from tornado.options import define, options
+from tornado.options import define, options, parse_command_line
 import os
 
 define('port', default=2333, help='port to listen on')
@@ -22,6 +22,7 @@ def make_app():
     ])
 
 if __name__ == "__main__":
+    parse_command_line()
     app = make_app()
     app.listen(options.port)
     tornado.ioloop.IOLoop.current().start()
