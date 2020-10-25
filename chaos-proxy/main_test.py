@@ -1,13 +1,14 @@
 import pytest
-import tornado.web
 from main import make_app
 from timeit import default_timer as timer
 
 application = make_app()
 
+
 @pytest.fixture
 def app():
     return application
+
 
 @pytest.mark.gen_test
 async def test_config(http_client, base_url):
@@ -17,6 +18,7 @@ async def test_config(http_client, base_url):
     response = await http_client.fetch(f"{base_url}/config/get/latency")
     assert response.code == 200
     assert response.body == b"200"
+
 
 @pytest.mark.gen_test
 async def test_reverse_proxy(http_client, base_url):

@@ -12,30 +12,35 @@ define('upstream', default='localhost:2333', help='upstream server')
 
 config = {}
 
+
 class ReverseProxyHandler(tornado.web.RequestHandler):
     async def get(self, url):
         # wait for latency (ms)
         await sleep(int(config.get("latency", 0)) / 1000)
         upstream = config.get("upstream", options.upstream)
         resp = await AsyncHTTPClient().fetch(f"http://{upstream}/{url}",
-            headers=self.request.headers)
+                                             headers=self.request.headers)
         self.set_status(resp.code)
-        for k,v in resp.headers.get_all():
+        for k, v in resp.headers.get_all():
             self.add_header(k, v)
         self.write(resp.body)
+
 
 class ConfigGetHandler(tornado.web.RequestHandler):
     def get(self, item):
         self.write(config.get(item, ""))
+
 
 class ConfigSetHandler(tornado.web.RequestHandler):
     def get(self, item, value):
         config[item] = value
         self.write(f"success")
 
+
 class PingHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("Hello, world!")
+
 
 def make_app():
     return tornado.web.Application([
@@ -45,6 +50,7 @@ def make_app():
         (r"/ping", PingHandler),
         (r"/(.*)", ReverseProxyHandler),
     ])
+
 
 if __name__ == "__main__":
     parse_command_line()
