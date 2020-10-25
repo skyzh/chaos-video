@@ -1,4 +1,4 @@
-fix-python-%:
+format-python-%:
 	cd $* && autopep8 --in-place --recursive .
 
 lint-python-%:
@@ -12,4 +12,4 @@ test-python-%:
 
 test: test-python-blank-server test-python-chaos-proxy
 
-fix: fix-python-blank-server fix-python-chaos-proxy
+format: format-python-blank-server format-python-chaos-proxy

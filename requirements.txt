@@ -4,3 +4,4 @@ pytest-tornado
 requests
 flake8
 autopep8
+aiohttp[speedups]
