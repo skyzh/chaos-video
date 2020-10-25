@@ -3,7 +3,6 @@ import tornado.web
 import tornado.platform.asyncio
 from tornado.options import define, options, parse_command_line
 from tornado.httpclient import AsyncHTTPClient
-import os
 import asyncio
 from asyncio import sleep
 
@@ -34,7 +33,7 @@ class ConfigGetHandler(tornado.web.RequestHandler):
 class ConfigSetHandler(tornado.web.RequestHandler):
     def get(self, item, value):
         config[item] = value
-        self.write(f"success")
+        self.write("success")
 
 
 class PingHandler(tornado.web.RequestHandler):
