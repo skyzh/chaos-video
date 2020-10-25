@@ -1,5 +1,11 @@
 import pytest
 from main import make_app
+from tornado.options import define
+import os
+
+define('static_path', default=os.path.join(
+    os.path.dirname(__file__), "static"), help='static file path')
+
 
 application = make_app()
 

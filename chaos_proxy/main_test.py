@@ -1,6 +1,8 @@
 import pytest
 from main import make_app, config
 from timeit import default_timer as timer
+from tornado.options import define
+define('upstream', default='localhost:2333', help='upstream server')
 
 application = make_app()
 
