@@ -1,7 +1,6 @@
 import pytest
 from main import make_app
 from config import set_config, get_config
-from asyncio import sleep
 
 application = make_app()
 

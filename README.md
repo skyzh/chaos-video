@@ -14,7 +14,8 @@ video-player <---> chaos-proxy <---> blank-server <---> video-gen 生成的视�
 * 此时 VSCode 应该可以自动识别到虚拟环境，在开发过程中自动使用虚拟环境中的 Python。
 * 开始开发 `git checkout -b some-new-feature`
 * 测试 `make test`
-* 格式化代码 `make fix`
+* 格式化代码 `make format`
+* 检查 warning `make lint`
 * 发 PR
   * `git add -A`
   * `git commit -m "module: what have you done"`
