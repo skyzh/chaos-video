@@ -27,7 +27,7 @@ class ReverseProxyHandler(tornado.web.RequestHandler):
 
 class ConfigGetHandler(tornado.web.RequestHandler):
     def get(self, item):
-        self.write(config.get(item, ""))
+        self.write(str(config.get(item, "")))
 
 
 class ConfigSetHandler(tornado.web.RequestHandler):

@@ -1,14 +1,31 @@
 import sys
-import requests
+import aiohttp
+import asyncio
 
-SERVER = "localhost:2334"
+SERVER = "http://localhost:2334"
 
-if __name__ == "__main__":
+
+async def set_config(key, value, server):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{server}/config/set/{key}/{value}") as response:
+            return await response.text()
+
+
+async def get_config(key, server):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"{server}/config/get/{key}") as response:
+            return await response.text()
+
+
+async def main():
     if len(sys.argv) == 2:
         # get
-        print(requests.get(
-            f"http://{SERVER}/config/get/{sys.argv[1]}").content.decode())
+        print(await get_config(sys.argv[1], SERVER))
     if len(sys.argv) == 3:
         # set
-        print(requests.get(
-            f"http://{SERVER}/config/set/{sys.argv[1]}/{sys.argv[2]}").content.decode())
+        print(await set_config(sys.argv[1], sys.argv[2], SERVER))
+
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
