@@ -3,10 +3,6 @@ import tornado.web
 from tornado.options import define, options, parse_command_line
 import os
 
-define('port', default=2333, help='port to listen on')
-define('static_path', default=os.path.join(
-    os.path.dirname(__file__), "static"), help='static file path')
-
 
 class PingHandler(tornado.web.RequestHandler):
     def get(self):
@@ -28,6 +24,10 @@ def make_app():
 
 
 if __name__ == "__main__":
+    define('port', default=2333, help='port to listen on')
+    define('static_path', default=os.path.join(
+        os.path.dirname(__file__), "static"), help='static file path')
+
     parse_command_line()
     app = make_app()
     app.listen(options.port)

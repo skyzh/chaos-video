@@ -6,8 +6,6 @@ from tornado.httpclient import AsyncHTTPClient
 import asyncio
 from asyncio import sleep
 
-define('port', default=2334, help='port to listen on')
-define('upstream', default='localhost:2333', help='upstream server')
 
 config = {}
 
@@ -52,6 +50,9 @@ def make_app():
 
 
 if __name__ == "__main__":
+    define('port', default=2334, help='port to listen on')
+    define('upstream', default='localhost:2333', help='upstream server')
+
     parse_command_line()
     tornado.platform.asyncio.AsyncIOMainLoop().install()
     ioloop = asyncio.get_event_loop()
