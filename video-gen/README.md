@@ -5,7 +5,42 @@ Video-gen 负责将已有的视频文件转换为可以分块传输的形式。
 Video-gen 除了能将视频切分为长度相近的块以外，还可以将画面横向切分。
 通过设置不同分块的清晰度，客户端可以实现视频码率的多级动态变化。
 
-## manifest
+## HLS-based Streaming
+
+Video-gen 将视频转换为 HLS 播放列表和视频分块。一个 HLS 播放列表中含有
+多个码率（分辨率）的视频。
+
+与此同时，为了实现视频码率的多级动态变化，Video-gen 会同时生成多个播放列表。
+每个播放列表包含视频画面的一部分（纵向/横向/棋盘切割）。
+
+## Example
+
+TODO: 在完成 video-gen 后更新使用文档
+
+```bash
+./gen.py wo-de-qian-ban-sheng.mkv --split-type=vertical-4
+```
+
+之后，可以生成 4 (分割) + 1 (原始) = 5 条 HLS 流。在此基础上，生成一个 manifest。
+
+```json
+{
+    "name": "我的前半生 EP1",
+    "streams": {
+        "original": "original.m3u8",
+        "vertical-4": "vertical-%d.m3u8"
+    }
+}
+```
+
+## Reference
+
+* https://github.com/lebougui/hls-creator
+* https://github.com/bentasker/HLS-Stream-Creator
+
+## 弃用的方案
+
+### manifest
 
 对于一个视频文件，video-gen 首先需要生成一个 manifest 文件，含有该视频对应的分块信息。
 下面是一个例子。
@@ -76,7 +111,7 @@ Video-gen 除了能将视频切分为长度相近的块以外，还可以将画�
         | ...
 ```
 
-## chunk 分割
+### chunk 分割
 
 video-gen 会将视频切成许多 chunk。在最高清晰度下，每个 chunk 大小应当在 4MB 左右。
 
