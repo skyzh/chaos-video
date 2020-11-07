@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - master
-    paths:
-      - 'video-player/**'
   pull_request:
     branches:
       - master
+    paths:
+      - 'video-player/**'
 
 jobs:
   build:
