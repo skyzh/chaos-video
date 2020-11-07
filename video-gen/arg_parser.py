@@ -6,8 +6,9 @@ def parse_config(argv=None):
 
     parser.add_argument('-i', '--input', type=str, default='in.mp4')
 
-    parser.add_argument('-sp', '--split', default='(1,1)', help='(A,B), A stands for the split number vertically on the width side' +
-        ', B stands for the split number horizontally on the height side')
+    parser.add_argument('-sp', '--split', default='(1,1)',
+                        help='(A,B), A stands for the split number vertically on the width side' +
+                        ', B stands for the split number horizontally on the height side')
 
     # parser.add_argument('--res', type=list, default=[360, 480, 720, 1080, 4000])
 
