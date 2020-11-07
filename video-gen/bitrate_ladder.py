@@ -3,7 +3,7 @@ import copy
 # for H.264, the ladder roughly follows the standard of apple Inc.
 default_ladder = [
     # format: bitrate, width, height
-    # [100, 300, 200],
+    [100, 300, 200],
     [145, 416, 234],    # 0
     [365, 480, 270],    # 1
     [730, 640, 360],    # 2
@@ -37,13 +37,13 @@ def calc_video_config(inp_bitrate, inp_width, inp_height, inp_t_length, split_mo
         my_ladder[i].append(seconds)
         my_ladder[i][0] = my_ladder[i][0] / split_number # bitrate of each chunk after crop
         # change resolution to that after crop
-        if my_ladder[i][1] > inp_width:
-            # maximal resolution is input resolution ? if not necessary, we can just delete the code block
+        if my_ladder[i][1] > inp_width or my_ladder[i][2] > inp_height:
+            # maximal resolution is input resolution 
             my_ladder[i][1] = -1
             my_ladder[i][2] = -1
         else:
             my_ladder[i][1] = my_ladder[i][1] / split_mode[0]
-            my_ladder[i][2] = my_ladder[i][1] / split_mode[1]
+            my_ladder[i][2] = my_ladder[i][2] / split_mode[1]
     
     print(my_ladder)
     return my_ladder

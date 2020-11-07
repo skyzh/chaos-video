@@ -13,12 +13,28 @@ Video-gen 将视频转换为 HLS 播放列表和视频分块。一个 HLS 播放
 与此同时，为了实现视频码率的多级动态变化，Video-gen 会同时生成多个播放列表。
 每个播放列表包含视频画面的一部分（纵向/横向/棋盘切割）。
 
-## Example
+## Usage
 
-TODO: 在完成 video-gen 后更新使用文档
 
 ```bash
-./gen.py wo-de-qian-ban-sheng.mkv --split-type=vertical-4
+python main.py \
+    -i or --input 'input file'\         # Input file
+    -sp or --split '(A,B)'\             # split mode, A stands for the split number vertically on the width side, 
+                                        # B stands for the split number horizontally on the height side
+    -o or --out_dir 'output directory'\ # output directory
+    -cd or --crop_dir 'crop video directory'\   # temporary directory for videos after crop(split)
+    -cs or --chunk_size 'k'\            # the chunk size of maximal resolution, in the unit of MB
+    --2pass                             # whether use 2 pass encoding, has not implemented now
+```
+
+## Example
+
+```bash
+python main.py \
+    -i 'in.mp4'\
+    -sp '(2,2)'\
+    -o 'outputs'\
+    -cd 'crop_outputs'
 ```
 
 之后，可以生成 4 (分割) + 1 (原始) = 5 条 HLS 流。在此基础上，生成一个 manifest。
