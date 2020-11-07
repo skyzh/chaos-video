@@ -9,10 +9,10 @@ test-python-%:
 	cd $* && pytest
 
 format-nodejs-%:
-	cd $* && prettier ./node_modules/.bin/prettier --write "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}" -w
+	cd $* && ./node_modules/.bin/prettier --write "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}" -w
 
 lint-nodejs-%:
-	cd $* && prettier ./node_modules/.bin/prettier --write "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}" -c
+	cd $* && ./node_modules/.bin/prettier --write "src/**/*.{js,jsx,ts,tsx,json,css,scss,md}" -c
 
 lint: lint-python-blank_server lint-python-chaos_proxy
 	flake8 runserver.py --select=E9,F63,F7,F82 --show-source --statistics
