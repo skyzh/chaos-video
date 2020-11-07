@@ -1,0 +1,22 @@
+name: Lint and Build Nodejs Packages
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js 14
+      uses: actions/setup-node@v1
+      with:
+        node-version: 14
+    - run: cd video-player && npm install
+    - run: make lint-nodejs-video-player
+    - run: cd video-player && npm run build --if-present
