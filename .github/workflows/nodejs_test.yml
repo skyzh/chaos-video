@@ -17,6 +17,6 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: 14
-    - run: cd video-player && npm install
+    - run: cd video-player && npm install && npm install prettier
     - run: make lint-nodejs-video-player
     - run: cd video-player && npm run build --if-present
