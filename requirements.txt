@@ -5,4 +5,4 @@ requests
 flake8
 autopep8
 aiohttp[speedups]
-fmpeg-python
+ffmpeg-python
