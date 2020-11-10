@@ -3,7 +3,6 @@ import copy
 # for H.264, the ladder roughly follows the standard of apple Inc.
 default_ladder = [
     # format: bitrate, width, height
-    [100, 300, 200],
     [145, 416, 234],    # 0
     [365, 480, 270],    # 1
     [730, 640, 360],    # 2
@@ -46,5 +45,5 @@ def calc_video_config(inp_bitrate, inp_width, inp_height, inp_t_length, split_mo
             my_ladder[i][1] = my_ladder[i][1] / split_mode[0]
             my_ladder[i][2] = my_ladder[i][2] / split_mode[1]
 
-    print(my_ladder)
+    print('My bitrate ladder: ', my_ladder)
     return my_ladder
