@@ -24,8 +24,13 @@ python main.py \
     -o or --out_dir 'output directory'\ # output directory
     -cd or --crop_dir 'crop video directory'\   # temporary directory for videos after crop(split)
     -cs or --chunk_size 'k'\            # the chunk size of maximal resolution, in the unit of MB
-    --2pass                             # whether use 2 pass encoding, has not implemented now
+    --2pass                             # whether use 2 pass encoding
 ```
+
+### Warning
+
+"--2pass" Argument is not recommended. Because it seems that in the "2 pass" mode, we cannot specify the time (duration) of each chunk. So it will only output streams with the same time length as origin.
+
 
 ## Example
 
@@ -41,10 +46,22 @@ python main.py \
 
 ```json
 {
-    "name": "我的前半生 EP1",
+    "name": "in",
+    "out_dir": "outputs", 
     "streams": {
-        "original": "original.m3u8",
-        "vertical-4": "vertical-%d.m3u8"
+        "original": "in.mp4", 
+        "original_crop": [
+            "crop_outputs/in_c_0_0.mp4", 
+            "crop_outputs/in_c_0_1.mp4", 
+            "crop_outputs/in_c_1_0.mp4", 
+            "crop_outputs/in_c_1_1.mp4"
+        ], 
+        "chunks": [
+            ["in_c_0_0.mp4_25.m3u8", "in_c_0_0.mp4_36.m3u8"], 
+            ["in_c_0_1.mp4_25.m3u8", "in_c_0_1.mp4_36.m3u8"], 
+            ["in_c_1_0.mp4_25.m3u8", "in_c_1_0.mp4_36.m3u8"], 
+            ["in_c_1_1.mp4_25.m3u8", "in_c_1_1.mp4_36.m3u8"]
+        ]
     }
 }
 ```

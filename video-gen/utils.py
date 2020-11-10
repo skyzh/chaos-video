@@ -34,6 +34,7 @@ def concat_arg(args, i, j):
     out_dir = os.path.join(args['out_dir'], f'chunk_{i}_{j}')
     # use_2_pass = args['2pass']
 
+    out_names = []
     bitrates_str = ''
     for item in args['out_streams']:
         bitrate = int(item[0])
@@ -43,16 +44,25 @@ def concat_arg(args, i, j):
             height = int(item[2])
             bitrates_str += f'-{width}*{height}'
         bitrates_str += ','
+        input_name = input.split('/')[-1]
+        out_names.append(f'{input_name}_{bitrate}.m3u8')
 
     bitrates_str = bitrates_str[:-1]
 
-    command = f'sh ./HLS-Stream-Creator.sh \
-        -i {input}\
-        -s {seconds}\
-        -b {bitrates_str}\
-        -o {out_dir}'
+    if args['2pass']:
+        command = command = f'sh ./HLS-Stream-Creator.sh \
+            -i {input}\
+            -b {bitrates_str}\
+            -o {out_dir}\
+            -2'
+    else:
+        command = f'sh ./HLS-Stream-Creator.sh \
+            -i {input}\
+            -s {seconds}\
+            -b {bitrates_str}\
+            -o {out_dir}'
 
-    return command
+    return command, out_names
 
 
 def get_crop_path(cfg, i_idx, j_idx):
@@ -86,13 +96,15 @@ def get_input_info(input_n):
     return info
 
 
-def write_json(cfg, out_files):
+def write_json(cfg, crop_files, out_files):
     out = {
-        'name': cfg['input'].split('.')[0],  # just the original file name, no suffix
-        'out_dir': os.path.join(cfg['out_dir'], cfg['input'].split('.')[0]),
+        # just the original file name, no suffix
+        'name': cfg['input'].split('.')[0],
+        'out_dir': cfg['out_dir'],
         'streams': {
-            'original': out_files['origin']['name'],
-            'chunks': [item for item in out_files['chunk']['name']]
+            'original': cfg['input'],
+            'original_crop': crop_files,
+            'chunks': out_files
         }
     }
 

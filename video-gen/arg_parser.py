@@ -18,9 +18,12 @@ def parse_config(argv=None):
 
     parser.add_argument('-cs', '--chunk_size', default=4, help='unit: mb')
 
-    parser.add_argument('--2pass', default=False)
+    parser.add_argument('-2', '--2pass', default=False)
 
     args = vars(parser.parse_args())
+    args['split'] = args['split'].replace(' ', '')
     split = args['split'][1:-1].split(',')
     args['split'] = (int(split[0]), int(split[1]))
+    args['2pass'] = (args['2pass'] == 'True')
+
     return args
