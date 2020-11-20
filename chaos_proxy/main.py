@@ -3,7 +3,6 @@ import tornado.web
 import tornado.platform.asyncio
 from tornado.options import define, options, parse_command_line
 from tornado.httpclient import AsyncHTTPClient
-import asyncio
 from asyncio import sleep
 from datetime import datetime
 import time
@@ -146,7 +145,9 @@ class ReverseProxyHandler(tornado.web.RequestHandler):
             for k, v in response.headers.get_all():
                 self.add_header(k, v)
             if not (
-                    interval == Advanced_global_limit.Interval and speed_min == Advanced_global_limit.min_length and speed_max == self.Advanced_global_limit.max_length):
+                    interval == Advanced_global_limit.Interval and
+                    speed_min == Advanced_global_limit.min_length and
+                    speed_max == self.Advanced_global_limit.max_length):
                 print("Advanced Global limit reset parameters\n")
                 # if the parameters have been changed, reset.
                 Advanced_global_limit.reset_parameters(
