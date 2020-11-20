@@ -7,10 +7,10 @@ application = make_app()
 
 @pytest.fixture
 def app():
-	return application
+    return application
 
 
 @pytest.mark.gen_test
 async def test_config(http_client, base_url):
-	assert await set_config("latency", "200", base_url) == "success"
-	assert await get_config("latency", base_url) == "200"
+    assert await set_config("latency", "200", base_url) == "success"
+    assert await get_config("latency", base_url) == "200"

@@ -20,10 +20,12 @@ async def get_config(key, server):
 async def main():
     if len(sys.argv) == 2:
         # get
-        print(await get_config(sys.argv[1], SERVER))    # print it on the website
+        # print it on the website
+        print(await get_config(sys.argv[1], SERVER))
     if len(sys.argv) == 3:
         # set
-        print(await set_config(sys.argv[1], sys.argv[2], SERVER))   # print it on the website
+        # print it on the website
+        print(await set_config(sys.argv[1], sys.argv[2], SERVER))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,112 @@
+import functools
+import tornado.ioloop
+import tornado.web
+import tornado.platform.asyncio
+from tornado.options import define, options, parse_command_line
+from tornado.httpclient import AsyncHTTPClient
+import asyncio
+from asyncio import sleep
+from datetime import datetime, timedelta
+
+"""
+运行起来服务器后(main.py),执行一个批处理文件(.bat || .sh)里面有许多连续执行的命令行命令
+这些命令分为三种：测试命令:   /ping	，设置参数命令：/config/get 	/config/set，请求命令 (主):  /proxy/(.*)    /(.*)
+用向chaos server 发送请求时，服务器调用ReverseProxyHandler向代理服务器发送request请求，
+得到request 请求结果,write 到web page
+Our work:在chaos server上模拟真实服务器的延迟和速率限制
+"""
+
+config = {}
+
+interval = 3000
+i = 0
+http_client = AsyncHTTPClient()
+timeout = 0
+time_unit = 10
+
+
+class ReverseProxyHandler(tornado.web.RequestHandler):
+    # define the handle request function
+    def handle_request(self, response):
+        self.set_status(response.code)
+        for k, v in response.headers.get_all():
+            self.add_header(k, v)
+        self.write(response.body)
+        global i
+        i -= 1
+        if i == 0:
+            ioloop.IOLoop.instance().stop()
+
+    async def get(self, url):
+        global i, timeout, time_unit
+        # wait for latency (ms), sleep unit: seconds
+        await sleep(int(config.get("latency", 0)) / 1000)
+        upstream = config.get("upstream",
+                              options.upstream)  # if not get the upstream settings, then use the default value: options.upsteam
+
+        # set the constrain
+        i += 1
+        if i <= interval:
+            # i is less than 3000, just fetch the request without any timeout
+            http_client.fetch(f"http://{upstream}/{url}", self.handle_request, headers=self.request.headers,
+                              method='GET')
+            """ AsyncHTTPClient().fetch() -->
+                           1.Executes a request, asynchronously returning an HTTPResponse.
+                           The request may be either a string URL or an HTTPRequest object. 
+                           If it is a string, we construct an HTTPRequest using any additional kwargs: HTTPRequest(request, **kwargs)
+                           2.This method returns a .Future whose result is an HTTPResponse. By default, the Future will raise an HTTPError if the request returned a non-200 response code (other errors may also be raised if the server could not be contacted). Instead, if raise_error is set to False, the response will always be returned regardless of the response code.
+                           3.If a callback is given, it will be invoked with the HTTPResponse. In the callback interface, HTTPError is not automatically raised. Instead, you must check the response's error attribute or call its ~HTTPResponse.rethrow method.
+                           """
+        else:
+            if i/interval > 0:
+                timeout = time_unit*(i/interval)
+            loop = ioloop.IOLoop.current()
+            loop.call_later(timeout, callback=functools.partial(http_client.fetch, f"http://{upstream}/{url}",
+                                                                self.handle_request, 'GET'))    # from current time delay timeout time to execute
+
+            # functools.partial(func, *args, **keywords) 是被用作 “冻结” 某些函数的参数或者关键字参数，同时会生成一个带有新标签的对象(即返回一个新的函数)。
+            # 如果有更多的位置参数提供调用，它们会被附加到 args 中。如果有额外的关键字参数提供，它们将会扩展并覆盖原有的关键字参数。
+            """   loop.call_later()
+            Runs the callback after delay seconds have passed.
+            Returns an opaque handle that may be passed to remove_timeout to cancel. 
+            Note that unlike the asyncio method of the same name, the returned object does not have a cancel() method.
+            """
+
+
+class ConfigGetHandler(tornado.web.RequestHandler):
+    def get(self, item):
+        self.write(str(config.get(item, "")))  # write the output to the request
+
+
+class ConfigSetHandler(tornado.web.RequestHandler):
+    def get(self, item, value):
+        config[item] = value
+        self.write("success")
+
+
+class PingHandler(tornado.web.RequestHandler):
+    def get(self):
+        self.write("Hello, world!")
+
+
+def make_app():
+    return tornado.web.Application([
+        (r"/(.*)", ReverseProxyHandler),  # The real request, almost all the user use this to request
+        (r"/proxy/(.*)", ReverseProxyHandler),  # We implement the speed constraint and latency mechanism here.
+        (r"/config/get/(.*)", ConfigGetHandler),  # for check the parameter current settings
+        (r"/config/set/(.*)/(.*)", ConfigSetHandler),  # for setting parameters
+        (r"/ping", PingHandler),  # for test
+    ])
+
+
+if __name__ == "__main__":
+    define('port', default=2334, help='port to listen on')  # set the options.port here
+    define('upstream', default='localhost:2333', help='upstream server')  # set the options.upsream here
+
+    parse_command_line()  # Parses global options from the command line.
+    tornado.platform.asyncio.AsyncIOMainLoop().install()  # AsyncIOMainLoop creates an .IOLoop that corresponds to the current asyncio event loop (i.e. the one returned by asyncio.get_event_loop()).
+    ioloop = asyncio.get_event_loop()  # get a current asyncio I/O event loop, you can view that as an initialization
+    app = make_app()  # Define the application
+    app.listen(
+        options.port)  # Starts an HTTP server for this application on the given port. This is a convenience alias for creating an .HTTPServer object and calling its listen method.
+    ioloop.run_forever()  # Run the event loop until stop() is called
