@@ -18,6 +18,7 @@ Video-gen 将视频转换为 HLS 播放列表和视频分块。一个 HLS 播放
 
 ```bash
 python main.py \
+    -- dry_run                          # if use dry_run mode, only output commands in 'commands.txt'
     -i or --input 'input file'\         # Input file
     -sp or --split '(A,B)'\             # split mode, A stands for the split number vertically on the width side, 
                                         # B stands for the split number horizontally on the height side

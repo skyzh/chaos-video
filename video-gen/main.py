@@ -7,16 +7,18 @@ import subprocess as sp
 
 
 if __name__ == "__main__":
+    commands = []
     cfg = parse_config()
     input_n = cfg['input']
+    is_dryrun = cfg['dry_run']
 
     in_info = get_input_info(input_n)
     cfg.update(in_info)
 
     my_ladder = calc_video_config(in_info['bit_rate'], in_info['width'], in_info['height'],
-                                  in_info['duration'], cfg['split'], int(cfg['chunk_size']))
+                                  in_info['duration'], cfg['split'], cfg['chunk_size'])
 
-    split_chunks(cfg)
+    commands += split_chunks(cfg, is_dryrun)
 
     split_mode = cfg['split']
     split_mode = int(split_mode[0]), int(split_mode[1])
@@ -31,9 +33,19 @@ if __name__ == "__main__":
             tmp_cfg = cfg.copy()
             tmp_cfg.update({'out_streams': my_ladder, 'in': crop_place})
             command, out_file = concat_arg(tmp_cfg, i, j)
-            sp.check_output(command, shell=True)
+
+            if not is_dryrun:
+                sp.check_output(command, shell=True)
+
+            commands.append(command)
             out_files.append(out_file)
 
+    with open('commands.txt', 'w') as f:
+        for item in commands:
+            f.write("%s\n" % item)
+
+    # seems strange, because there is no output file now if in dry_run mode ...
+    # But if in dry_run mode, just ignore it
     write_json(cfg, crop_files, out_files)
 
     print('SUCCESS')
