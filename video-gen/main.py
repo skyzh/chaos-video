@@ -14,7 +14,7 @@ if __name__ == "__main__":
     cfg.update(in_info)
 
     my_ladder = calc_video_config(in_info['bit_rate'], in_info['width'], in_info['height'],
-                                  in_info['duration'], cfg['split'], cfg['chunk_size'])
+                                  in_info['duration'], cfg['split'], int(cfg['chunk_size']))
 
     split_chunks(cfg)
 
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             tmp_cfg = cfg.copy()
             tmp_cfg.update({'out_streams': my_ladder, 'in': crop_place})
             command, out_file = concat_arg(tmp_cfg, i, j)
-            sp.check_output(command)
+            sp.check_output(command, shell=True)
             out_files.append(out_file)
 
     write_json(cfg, crop_files, out_files)
