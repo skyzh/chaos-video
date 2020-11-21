@@ -23,7 +23,7 @@ def split_chunks(cfg):
                 '-c:a copy ' +\
                 f'{out_place}'
 
-            sp.check_output(command)
+            sp.check_output(command, shell=True)
 
     return
 
