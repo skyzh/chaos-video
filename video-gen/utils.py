@@ -4,7 +4,7 @@ import subprocess as sp
 import ffmpeg
 
 
-def split_chunks(cfg):
+def split_chunks(cfg, is_dryrun=False):
     split_mode = cfg['split']
     split_mode = int(split_mode[0]), int(split_mode[1])
 
@@ -13,6 +13,7 @@ def split_chunks(cfg):
     height = int(cfg['height'])
     v_interval = width // split_mode[1]
     h_interval = height // split_mode[0]
+    commands = []
     for i in range(split_mode[0]):
         for j in range(split_mode[1]):
             start = h_interval * i, v_interval * j
@@ -23,9 +24,12 @@ def split_chunks(cfg):
                 '-c:a copy ' +\
                 f'{out_place}'
 
-            sp.check_output(command, shell=True)
+            commands.append(command)
 
-    return
+            if not is_dryrun:
+                sp.check_output(command)
+
+    return commands
 
 
 def concat_arg(args, i, j):
@@ -50,17 +54,17 @@ def concat_arg(args, i, j):
     bitrates_str = bitrates_str[:-1]
 
     if args['2pass']:
-        command = command = f'sh ./HLS-Stream-Creator.sh \
-            -i {input}\
-            -b {bitrates_str}\
-            -o {out_dir}\
-            -2'
+        command = command = 'sh ./HLS-Stream-Creator.sh ' +\
+            f'-i {input} ' +\
+            f'-b {bitrates_str} ' +\
+            f'-o {out_dir} ' +\
+            '-2'
     else:
-        command = f'sh ./HLS-Stream-Creator.sh \
-            -i {input}\
-            -s {seconds}\
-            -b {bitrates_str}\
-            -o {out_dir}'
+        command = 'sh ./HLS-Stream-Creator.sh ' +\
+            f'-i {input} ' +\
+            f'-s {seconds} ' +\
+            f'-b {bitrates_str} ' +\
+            f'-o {out_dir}'
 
     return command, out_names
 
