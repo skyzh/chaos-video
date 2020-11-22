@@ -27,7 +27,7 @@ def split_chunks(cfg, is_dryrun=False):
             commands.append(command)
 
             if not is_dryrun:
-                sp.check_output(command)
+                sp.check_output(command, shell=True)
 
     return commands
 
