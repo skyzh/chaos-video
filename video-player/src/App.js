@@ -1,9 +1,7 @@
 import "./App.scss";
 import Container from "react-bootstrap/Container";
 import ReactHlsPlayer from "react-hls-player";
-import { useCallback, useRef, useEffect } from "react";
-import range from "lodash/range";
-import useEventListener from "@use-it/event-listener";
+import { useRef, useEffect } from "react";
 
 // function sync() {
 //   if (videos.b.media.readyState === 4) {
@@ -26,50 +24,50 @@ function App() {
   const MAIN_ID = "ref4";
 
   const seek = ({ target }) => {
-    if (target.id != MAIN_ID) return;
+    if (target.id !== MAIN_ID) return;
     for (let ref of refs) {
-      if (ref.current.id != MAIN_ID) {
+      if (ref.current.id !== MAIN_ID) {
         ref.current.currentTime = target.currentTime;
       }
     }
   };
 
   const play = ({ target }) => {
-    if (target.id != MAIN_ID) return;
+    if (target.id !== MAIN_ID) return;
     for (let ref of refs) {
-      if (ref.current.id != MAIN_ID) {
+      if (ref.current.id !== MAIN_ID) {
         ref.current.play();
       }
     }
   };
 
   const pause = ({ target }) => {
-    if (target.id != MAIN_ID) return;
+    if (target.id !== MAIN_ID) return;
     for (let ref of refs) {
-      if (ref.current.id != MAIN_ID) {
+      if (ref.current.id !== MAIN_ID) {
         ref.current.pause();
       }
       ref.current.currentTime = target.currentTime;
     }
   };
 
-  const requestRef = useRef();
+  // const requestRef = useRef();
 
-  const animate = (time) => {
-    let currentTime = 0;
-    for (let ref of refs) {
-      if (ref.current.id == MAIN_ID) {
-        currentTime = ref.current.currentTime;
-      }
-    }
-    for (let ref of refs) {
-      if (ref.current.id != MAIN_ID) {
-        ref.current.currentTime = currentTime;
-      }
-    }
-    // The 'state' will always be the initial value here
-    requestRef.current = requestAnimationFrame(animate);
-  };
+  // const animate = (time) => {
+  //   let currentTime = 0;
+  //   for (let ref of refs) {
+  //     if (ref.current.id == MAIN_ID) {
+  //       currentTime = ref.current.currentTime;
+  //     }
+  //   }
+  //   for (let ref of refs) {
+  //     if (ref.current.id !== MAIN_ID) {
+  //       ref.current.currentTime = currentTime;
+  //     }
+  //   }
+  //   // The 'state' will always be the initial value here
+  //   requestRef.current = requestAnimationFrame(animate);
+  // };
 
   // useEffect(() => {
   //   requestRef.current = requestAnimationFrame(animate);
