@@ -20,7 +20,7 @@ def split_chunks(cfg, is_dryrun=False):
             out_place = get_crop_path(cfg, i, j)
 
             command = f'ffmpeg -i {input} ' +\
-                f'-filter:v \"crop={v_interval}:{h_interval}:{start[0]}:{start[1]}\" ' +\
+                f'-filter:v \"crop={v_interval}:{h_interval}:{start[1]}:{start[0]}\" ' +\
                 '-c:a copy ' +\
                 f'{out_place}'
 
