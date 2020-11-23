@@ -29,7 +29,7 @@ def calc_video_config(inp_bitrate, inp_width, inp_height, inp_t_length, split_mo
 
     my_ladder = copy.deepcopy(default_ladder[:idx])
 
-    if inp_bitrate != my_ladder[-1] * 1e3:
+    if inp_bitrate != my_ladder[-1][0] * 1e3:
         tmp = [inp_bitrate/1000, 1920, 1080]
         my_ladder.append(tmp)
 
