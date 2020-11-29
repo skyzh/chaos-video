@@ -5,6 +5,16 @@ import max from "lodash/max";
 
 import { useEffect } from "react";
 
+function getWidth(series) {
+  const len = series.length;
+  const widths = [];
+  for (let i = 0; i < len - 1; i++) {
+    widths.push(1);
+  }
+  widths.push(2);
+  return widths;
+}
+
 function StreamChart({ series }) {
   const options = {
     chart: {
@@ -31,7 +41,7 @@ function StreamChart({ series }) {
     },
     stroke: {
       curve: "straight",
-      width: 1,
+      width: getWidth(series),
     },
     markers: {
       size: 0,

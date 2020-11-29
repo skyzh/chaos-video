@@ -21,7 +21,7 @@ let playTime = Date.now();
 let currentTime = 0;
 
 const maxChartTicks = 10;
-const maxFrameBuffer = 8;
+const maxFrameBuffer = 12;
 let frames = [];
 
 function append(data, x) {
@@ -53,8 +53,9 @@ function App() {
   const mainRef = ref1;
 
   const series = useRef(
-    range(refs.length + 1).map((_x) => ({
+    range(refs.length + 1).map((idx) => ({
       data: range(maxChartTicks).map((_x) => 0),
+      name: idx < refs.length ? `Stream ${idx}` : `Final Stream`,
     }))
   );
 
@@ -233,19 +234,22 @@ function App() {
         <div className="col">{videoBuffer}</div>
       </div>
 
-      <div>
-        <Button variant="primary" onClick={play}>
-          Play
-        </Button>
-        <Button variant="primary" onClick={pause}>
-          Pause
-        </Button>
-        <Button variant="primary" onClick={() => seek(10.0)}>
-          Seek
-        </Button>
-      </div>
-      <div>
-        <StreamChart series={series.current}></StreamChart>
+      <div></div>
+      <div className="row">
+        <div className="col-4">
+          <StreamChart series={series.current}></StreamChart>
+        </div>
+        <div className="col-8">
+          <Button variant="primary" onClick={play} className="mr-1">
+            Play
+          </Button>
+          <Button variant="primary" onClick={pause} className="mr-1">
+            Pause
+          </Button>
+          <Button variant="primary" onClick={() => seek(10.0)} className="mr-1">
+            Seek
+          </Button>
+        </div>
       </div>
     </Container>
   );
