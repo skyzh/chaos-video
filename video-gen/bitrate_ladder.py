@@ -43,7 +43,7 @@ def calc_video_config(inp_bitrate, inp_width, inp_height, inp_t_length, split_mo
         # bitrate of each chunk after crop
         my_ladder[i][0] = my_ladder[i][0] / split_number
         if split_number > 1:
-            my_ladder[i][0] = my_ladder[i][0] * 1.1
+            my_ladder[i][0] = my_ladder[i][0] * 2.0
         # change resolution to that after crop and maximal resolution is input resolution
         if my_ladder[i][1] > inp_width or my_ladder[i][2] > inp_height:
             my_ladder[i][1] = -1
