@@ -16,7 +16,7 @@ def split_chunks(cfg, is_dryrun=False):
     commands = []
     for i in range(split_mode[0]):
         for j in range(split_mode[1]):
-            start = h_interval * i, v_interval * j
+            start = v_interval * j, h_interval * i
             out_place = get_crop_path(cfg, i, j)
 
             command = f'ffmpeg -i {input} ' +\
