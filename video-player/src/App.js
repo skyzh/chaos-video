@@ -136,22 +136,30 @@ function App() {
         const time = metadata.mediaTime;
         const delay = metadata.expectedDisplayTime - now;
         const frame = getFrame(time);
+        const lstFrame = frames[idx];
         frames[idx] = frame;
         const ref = refs[idx];
         const minFrame = min(frames);
         if (frame >= minFrame + maxFrameBuffer) {
           console.log("cannot follow up!");
         } else {
-          let thisCanvas = canvasRef.current[frame % maxFrameBuffer];
-          if (thisCanvas && thisCanvas.current) {
-            const ctx = thisCanvas.current.getContext("2d");
-            ctx.drawImage(
-              ref.current,
-              0,
-              Math.floor((height * idx) / refs.length),
-              width,
-              Math.floor(height / refs.length)
-            );
+          let idx_ = 0;
+          for (let frame_ = lstFrame + 1; frame_ <= frame; frame_ += 1) {
+            idx_ += 1;
+            let thisCanvas = canvasRef.current[frame_ % maxFrameBuffer];
+            if (thisCanvas && thisCanvas.current) {
+              const ctx = thisCanvas.current.getContext("2d");
+              ctx.drawImage(
+                ref.current,
+                0,
+                Math.floor((height * idx) / refs.length),
+                width,
+                Math.floor(height / refs.length)
+              );
+            }
+            if (idx_ >= maxFrameBuffer) {
+              break;
+            }
           }
         }
         requestRefs.current[idx].current = refs[
