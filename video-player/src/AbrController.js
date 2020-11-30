@@ -37,11 +37,13 @@ import EventHandler from "hls.js/src/event-handler";
 import { BufferHelper } from "hls.js/src/utils/buffer-helper";
 import { ErrorDetails } from "hls.js/src/errors";
 import { logger } from "hls.js/src/utils/logger";
-import EwmaBandWidthEstimator from "hls.js/src/utils/ewma-bandwidth-estimator";
+import getGlobalEwmaBandWidthEstimator from "./EwmaBandWidthEstimator.ts";
 
 const { performance } = window;
 
-class PatchedAbrController extends EventHandler {
+export const currentLevels = {};
+
+class CustomAbrController extends EventHandler {
   constructor(hls) {
     super(
       hls,
@@ -56,9 +58,7 @@ class PatchedAbrController extends EventHandler {
     this.timer = null;
     this._bwEstimator = null;
     this.onCheck = this._abandonRulesCheck.bind(this);
-
-    console.log("Custom ABRController Loaded!");
-    console.log(hls.config.idx);
+    this.idx = hls.config.idx;
   }
 
   destroy() {
@@ -91,7 +91,7 @@ class PatchedAbrController extends EventHandler {
           ewmaFast = config.abrEwmaFastVoD;
           ewmaSlow = config.abrEwmaSlowVoD;
         }
-        this._bwEstimator = new EwmaBandWidthEstimator(
+        this._bwEstimator = getGlobalEwmaBandWidthEstimator(
           hls,
           ewmaSlow,
           ewmaFast,
@@ -217,7 +217,7 @@ class PatchedAbrController extends EventHandler {
             // force next load level in auto mode
             hls.nextLoadLevel = nextLoadLevel;
             // update bw estimate for this fragment before cancelling load (this will help reducing the bw)
-            this._bwEstimator.sample(requestDelay, stats.loaded);
+            this._bwEstimator.sample(requestDelay, stats.loaded, this.idx);
             // abort fragment loading
             loader.abort();
             // stop abandon rules timer
@@ -287,7 +287,7 @@ class PatchedAbrController extends EventHandler {
           (8 * stats.loaded) / (stats.tbuffered - stats.trequest)
         )}`
       );
-      this._bwEstimator.sample(fragLoadingProcessingMs, stats.loaded);
+      this._bwEstimator.sample(fragLoadingProcessingMs, stats.loaded, this.idx);
       stats.bwEstimate = this._bwEstimator.getEstimate();
       // if fragment has been loaded to perform a bitrate test, (hls.startLevel = -1), store bitrate test delay duration
       if (frag.bitrateTest) {
@@ -333,6 +333,8 @@ class PatchedAbrController extends EventHandler {
     if (forcedAutoLevel !== -1) {
       nextABRAutoLevel = Math.min(forcedAutoLevel, nextABRAutoLevel);
     }
+
+    currentLevels[this.idx] = nextABRAutoLevel;
 
     return nextABRAutoLevel;
   }
@@ -493,4 +495,4 @@ class PatchedAbrController extends EventHandler {
   }
 }
 
-export default PatchedAbrController;
+export default CustomAbrController;
