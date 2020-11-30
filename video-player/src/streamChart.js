@@ -1,7 +1,5 @@
 import ApexCharts from "apexcharts";
 import ReactApexChart from "react-apexcharts";
-import min from "lodash/min";
-import max from "lodash/max";
 
 import { useEffect } from "react";
 
@@ -15,10 +13,10 @@ function getWidth(series) {
   return widths;
 }
 
-function StreamChart({ series, type }) {
+function StreamChart({ id, series, type }) {
   const options = {
     chart: {
-      id: "realtime",
+      id,
       toolbar: {
         show: false,
       },
@@ -58,42 +56,16 @@ function StreamChart({ series, type }) {
     legend: {
       show: true,
     },
-    plotOptions: {
-      heatmap: {
-        colorScale: {
-          ranges: [
-            {
-              from: 0,
-              to: 0,
-              color: "#ffffff",
-              name: "buffer",
-            },
-            {
-              from: 1,
-              to: 1,
-              color: "#128FD9",
-              name: "load",
-            },
-            {
-              from: 2,
-              to: 2,
-              color: "#FFB200",
-              name: "skip",
-            },
-          ],
-        },
-      },
-    },
   };
 
   useEffect(() => {
-    const id = setInterval(() => {
+    const cb = setInterval(() => {
       // options.yaxis.min = min(data)
       // options.yaxis.max = max(data)
       // ApexCharts.exec('realtime', 'updateOptions', options)
-      ApexCharts.exec("realtime", "updateSeries", series);
+      ApexCharts.exec(id, "updateSeries", series);
     }, 100);
-    return () => clearInterval(id);
+    return () => clearInterval(cb);
   }, [series]);
 
   return (

@@ -8,17 +8,17 @@ import StreamChart from "./streamChart";
 import range from "lodash/range";
 import min from "lodash/min";
 import max from "lodash/max";
-import clone from "lodash/clone";
 import every from "lodash/every";
-import some from "lodash/some";
+import clone from "lodash/clone";
 
-import PatchedAbrController from "./AbrController";
-import Hls from "hls.js";
+import CustomAbrController from "./AbrController";
+import { currentLevels } from "./AbrController";
+import { globalBandwidth } from "./EwmaBandWidthEstimator.ts";
 
-let playTime = Date.now();
-let currentTime = 0;
+import { append } from "./utils.ts";
 
 const maxChartTicks = 10;
+const maxWidthTicks = 60;
 const maxFrameBuffer = 12;
 const maxBufferChartTicks = 160;
 const bufferTickWidth = 3;
@@ -30,15 +30,9 @@ let canvasDrop = [];
 function genAbrConfig(idx) {
   return {
     idx,
-    abrController: PatchedAbrController,
+    testBandwidth: false,
+    abrController: CustomAbrController,
   };
-}
-
-function append(data, x, maxChartTicks) {
-  data.push(x);
-  if (data.length > maxChartTicks) {
-    data.splice(0, data.length - maxChartTicks);
-  }
 }
 
 function getFrame(time) {
@@ -62,7 +56,7 @@ function fillCanvasRect(canvas, y, x1, xwidth, color) {
 function frameReady(frame) {
   const idx = frame % maxFrameBuffer;
   const recordFrame = canvasDrop[idx].frame;
-  if (recordFrame != frame) {
+  if (recordFrame !== frame) {
     canvasDrop[idx].frame = frame;
     canvasDrop[idx].ready = 0;
   }
@@ -106,6 +100,15 @@ function App() {
     }))
   );
 
+  const widthSeries = useRef(
+    range(refs.length).map((idx) => ({
+      data: range(maxWidthTicks).map((_x) => 0),
+      name: `Stream ${idx}`,
+    }))
+  );
+
+  const qualitySeries = useRef(clone(globalBandwidth));
+
   if (canvasRef.current.length !== maxFrameBuffer) {
     canvasRef.current = Array(maxFrameBuffer)
       .fill()
@@ -124,13 +127,13 @@ function App() {
       .map((_, i) => requestRefs.current[i] || createRef());
   }
 
-  if (frames.length != refs.length) {
+  if (frames.length !== refs.length) {
     frames = Array(refs.length)
       .fill()
       .map((_, i) => 0);
   }
 
-  if (playableSegment.length != refs.length) {
+  if (playableSegment.length !== refs.length) {
     playableSegment = Array(refs.length)
       .fill()
       .map((_, i) => false);
@@ -149,7 +152,6 @@ function App() {
       ref.current.currentTime = mainRef.current.currentTime;
       ref.current.play();
     }
-    playTime = currentTime;
   };
 
   const pause = () => {
@@ -164,8 +166,6 @@ function App() {
 
   useEffect(() => {
     const animate = (time) => {
-      currentTime = Date.now();
-
       if (canvasRef.current) {
         const minFrame = min(frames);
         const maxFrame = max(frames);
@@ -175,6 +175,13 @@ function App() {
         for (let idx = 0; idx < refs.length; idx++) {
           const frame = frames[idx];
           append(series.current[idx].data, frame, maxChartTicks);
+          if (frame % 60 == 0) {
+            append(
+              widthSeries.current[idx].data,
+              currentLevels[idx] || 0,
+              maxWidthTicks
+            );
+          }
 
           if (bufferCanvas) {
             fillCanvasRect(
@@ -194,7 +201,7 @@ function App() {
         if (finalCanvasRef.current) {
           const idx = minFrame % maxFrameBuffer;
           // console.log(canvasDrop[idx])
-          if (canvasDrop[idx].ready == refs.length) {
+          if (canvasDrop[idx].ready === refs.length) {
             const ctx = finalCanvasRef.current.getContext("2d");
             let thisCanvas = canvasRef.current[idx];
             if (thisCanvas && thisCanvas.current) {
@@ -204,13 +211,15 @@ function App() {
         }
       }
 
+      if (qualitySeries.current) {
+        qualitySeries.current = clone(globalBandwidth);
+      }
       requestRef.current = requestAnimationFrame(animate);
     };
 
     const videoCallback = (idx) => {
       const func = (now, metadata) => {
         const time = metadata.mediaTime;
-        const delay = metadata.expectedDisplayTime - now;
         const frame = getFrame(time);
         const lstFrame = frames[idx];
         frames[idx] = frame;
@@ -283,13 +292,13 @@ function App() {
         );
       }
     };
-  }, []);
+  });
 
   useEffect(() => {
     const callbacks = [];
     for (let ref of refs) {
       if (ref.current) {
-        if (ref.current.id != MAIN_ID) {
+        if (ref.current.id !== MAIN_ID) {
           ref.current.muted = true;
         }
 
@@ -345,13 +354,32 @@ function App() {
         <div className="col">
           <h4>Original Split Video</h4>
           {videoBuffer}
+          <div>
+            <Button variant="primary" onClick={play} className="mr-1">
+              Play
+            </Button>
+            <Button variant="primary" onClick={pause} className="mr-1">
+              Pause
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => seek(10.0)}
+              className="mr-1"
+            >
+              Seek
+            </Button>
+          </div>
         </div>
       </div>
 
       <div className="row mt-3">
         <div className="col-4">
           <h4>Video Lag</h4>
-          <StreamChart series={series.current} type="line"></StreamChart>
+          <StreamChart
+            id="lag"
+            series={series.current}
+            type="line"
+          ></StreamChart>
         </div>
         <div className="col-4">
           <h4>Buffer Health</h4>
@@ -360,18 +388,16 @@ function App() {
             height={bufferHeight}
             ref={bufferCanvasRef}
           ></canvas>
-          {/* <StreamChart series={bufferSeries.current} type="heatmap"></StreamChart> */}
         </div>
         <div className="col-4">
-          <Button variant="primary" onClick={play} className="mr-1">
-            Play
-          </Button>
-          <Button variant="primary" onClick={pause} className="mr-1">
-            Pause
-          </Button>
-          <Button variant="primary" onClick={() => seek(10.0)} className="mr-1">
-            Seek
-          </Button>
+          <h4>Video Quality</h4>
+          <StreamChart
+            id="quality"
+            series={widthSeries.current}
+            type="line"
+          ></StreamChart>
+          <h4>Video Bandwidth</h4>
+          {/* <StreamChart id="bandwidth" series={qualitySeries.current} type="line"></StreamChart> */}
         </div>
       </div>
     </Container>
