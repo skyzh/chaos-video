@@ -2,29 +2,39 @@ import "./App.scss";
 import Container from "react-bootstrap/Container";
 import ReactHlsPlayer from "react-hls-player";
 import { useRef, useEffect, createRef } from "react";
-import range from "lodash/range";
-import min from "lodash/min";
 import Button from "react-bootstrap/Button";
 import StreamChart from "./streamChart";
-import useForceUpdate from "./useForceUpdate";
 
-// function sync() {
-//   if (videos.b.media.readyState === 4) {
-//     videos.b.currentTime(
-//       videos.a.currentTime()
-//     );
-//   }
-//   requestAnimationFrame(sync);
-// }
+import range from "lodash/range";
+import min from "lodash/min";
+import max from "lodash/max";
+import clone from "lodash/clone";
+import every from "lodash/every";
+import some from "lodash/some";
+
+import PatchedAbrController from "./AbrController";
+import Hls from "hls.js";
 
 let playTime = Date.now();
 let currentTime = 0;
 
 const maxChartTicks = 10;
 const maxFrameBuffer = 12;
-let frames = [];
+const maxBufferChartTicks = 160;
+const bufferTickWidth = 3;
+const bufferHeight = 100;
 
-function append(data, x) {
+let frames = [];
+let canvasDrop = [];
+
+function genAbrConfig(idx) {
+  return {
+    idx,
+    abrController: PatchedAbrController,
+  };
+}
+
+function append(data, x, maxChartTicks) {
   data.push(x);
   if (data.length > maxChartTicks) {
     data.splice(0, data.length - maxChartTicks);
@@ -36,6 +46,31 @@ function getFrame(time) {
   return Math.floor(time * 29.97);
 }
 
+function fillCanvasRect(canvas, y, x1, xwidth, color) {
+  const ctx = canvas.getContext("2d");
+  ctx.beginPath();
+  ctx.rect(
+    x1 * bufferTickWidth,
+    (bufferHeight / 4) * y,
+    bufferTickWidth * xwidth,
+    bufferHeight / 4
+  );
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function frameReady(frame) {
+  const idx = frame % maxFrameBuffer;
+  const recordFrame = canvasDrop[idx].frame;
+  if (recordFrame != frame) {
+    canvasDrop[idx].frame = frame;
+    canvasDrop[idx].ready = 0;
+  }
+  canvasDrop[idx].ready += 1;
+}
+
+let playableSegment = [];
+
 function App() {
   const ref1 = useRef();
   const ref2 = useRef();
@@ -45,8 +80,20 @@ function App() {
   const requestRefs = useRef([]);
   const canvasRef = useRef([]);
   const finalCanvasRef = useRef();
+  const bufferCanvasRef = useRef();
 
-  const canplay = (event) => console.log(event);
+  const canplay = ({ target }) => {
+    playableSegment[target.id] = true;
+    if (every(playableSegment, Boolean)) {
+      play();
+    }
+  };
+
+  const waiting = ({ target }) => {
+    console.log("waiting!", target.id);
+    // playableSegment[target.id] = false
+    // pause()
+  };
 
   const refs = [ref1, ref2, ref3, ref4];
   const MAIN_ID = "ref1";
@@ -65,6 +112,12 @@ function App() {
       .map((_, i) => canvasRef.current[i] || createRef());
   }
 
+  if (canvasDrop.length !== maxFrameBuffer) {
+    canvasDrop = Array(maxFrameBuffer)
+      .fill()
+      .map((_, i) => ({ frame: -1, ready: 0 }));
+  }
+
   if (requestRefs.current.length !== refs.length) {
     requestRefs.current = Array(refs.length)
       .fill()
@@ -75,6 +128,12 @@ function App() {
     frames = Array(refs.length)
       .fill()
       .map((_, i) => 0);
+  }
+
+  if (playableSegment.length != refs.length) {
+    playableSegment = Array(refs.length)
+      .fill()
+      .map((_, i) => false);
   }
 
   const seek = (currentTime) => {
@@ -109,21 +168,38 @@ function App() {
 
       if (canvasRef.current) {
         const minFrame = min(frames);
+        const maxFrame = max(frames);
 
-        for (let i = 0; i < refs.length; i++) {
-          const frame = frames[i];
-          append(series.current[i].data, frame);
+        let bufferCanvas = bufferCanvasRef.current;
+
+        for (let idx = 0; idx < refs.length; idx++) {
+          const frame = frames[idx];
+          append(series.current[idx].data, frame, maxChartTicks);
+
+          if (bufferCanvas) {
+            fillCanvasRect(
+              bufferCanvas,
+              idx,
+              (maxFrame + 1) % maxBufferChartTicks,
+              10,
+              "#FFFFFF"
+            );
+          }
         }
 
         if (series.current) {
-          append(series.current[refs.length].data, minFrame);
+          append(series.current[refs.length].data, minFrame, maxChartTicks);
         }
 
         if (finalCanvasRef.current) {
-          const ctx = finalCanvasRef.current.getContext("2d");
-          let thisCanvas = canvasRef.current[minFrame % maxFrameBuffer];
-          if (thisCanvas && thisCanvas.current) {
-            ctx.drawImage(thisCanvas.current, 0, 0, width, height);
+          const idx = minFrame % maxFrameBuffer;
+          // console.log(canvasDrop[idx])
+          if (canvasDrop[idx].ready == refs.length) {
+            const ctx = finalCanvasRef.current.getContext("2d");
+            let thisCanvas = canvasRef.current[idx];
+            if (thisCanvas && thisCanvas.current) {
+              ctx.drawImage(thisCanvas.current, 0, 0, width, height);
+            }
           }
         }
       }
@@ -142,26 +218,48 @@ function App() {
         const minFrame = min(frames);
         if (frame >= minFrame + maxFrameBuffer) {
           console.log("cannot follow up!");
+          playableSegment[idx] = false;
+          pause();
+          setTimeout(() => play(), 1000);
         } else {
-          let idx_ = 0;
-          for (let frame_ = lstFrame + 1; frame_ <= frame; frame_ += 1) {
-            idx_ += 1;
-            let thisCanvas = canvasRef.current[frame_ % maxFrameBuffer];
-            if (thisCanvas && thisCanvas.current) {
-              const ctx = thisCanvas.current.getContext("2d");
-              ctx.drawImage(
-                ref.current,
-                0,
-                Math.floor((height * idx) / refs.length),
-                width,
-                Math.floor(height / refs.length)
+          let bufferCanvas = bufferCanvasRef.current;
+
+          if (bufferCanvas) {
+            for (let frame_ = lstFrame + 1; frame_ < frame; frame_ += 1) {
+              fillCanvasRect(
+                bufferCanvas,
+                idx,
+                frame_ % maxBufferChartTicks,
+                1,
+                "#F6D55C"
               );
             }
-            if (idx_ >= maxFrameBuffer) {
-              break;
-            }
+          }
+
+          let thisCanvas = canvasRef.current[frame % maxFrameBuffer];
+          if (thisCanvas && thisCanvas.current) {
+            const ctx = thisCanvas.current.getContext("2d");
+            ctx.drawImage(
+              ref.current,
+              0,
+              Math.floor((height * idx) / refs.length),
+              width,
+              Math.floor(height / refs.length)
+            );
+            frameReady(frame);
+          }
+
+          if (bufferCanvas) {
+            fillCanvasRect(
+              bufferCanvas,
+              idx,
+              frame % maxBufferChartTicks,
+              1,
+              "#3CAEA3"
+            );
           }
         }
+
         requestRefs.current[idx].current = refs[
           idx
         ].current.requestVideoFrameCallback(func);
@@ -196,9 +294,11 @@ function App() {
         }
 
         ref.current.addEventListener("canplay", canplay);
+        ref.current.addEventListener("waiting", waiting);
 
         callbacks.push(() => {
           ref.current.removeEventListener("canplay", canplay);
+          ref.current.removeEventListener("waiting", waiting);
         });
       }
     }
@@ -208,9 +308,10 @@ function App() {
   });
 
   const video_urls = range(4).map(
-    (idx) => `/data/zelda/chunk_${idx}_0/zelda_trailer_c_${idx}_0.mp4_1197.m3u8`
+    (idx) =>
+      `/data/zelda/chunk_${idx}_0/zelda_trailer_c_${idx}_0.mp4_master.m3u8`
   );
-  // const video_urls = range(2).map(idx => `/data/genshin/chunk_${idx}_0/genshin_c_${idx}_0.mp4_master.m3u8`)
+  // const video_urls = range(4).map(idx => `/data/genshin/chunk_${idx}_0/genshin_c_${idx}_0.mp4_master.m3u8`)
 
   const frameBuffer = range(maxFrameBuffer).map((i) => (
     <canvas
@@ -229,6 +330,7 @@ function App() {
       controls={false}
       playerRef={refs[i]}
       id={`ref${i}`}
+      hlsConfig={genAbrConfig(i)}
       className="chaos-video-element"
     />
   ));
@@ -236,18 +338,31 @@ function App() {
     <Container fluid className="chaos-video-container">
       <div className="row">
         <div className="col">
+          <h4>Composite Video</h4>
           <canvas width={width} height={height} ref={finalCanvasRef}></canvas>
           {frameBuffer}
         </div>
-        <div className="col">{videoBuffer}</div>
+        <div className="col">
+          <h4>Original Split Video</h4>
+          {videoBuffer}
+        </div>
       </div>
 
-      <div></div>
-      <div className="row">
+      <div className="row mt-3">
         <div className="col-4">
-          <StreamChart series={series.current}></StreamChart>
+          <h4>Video Lag</h4>
+          <StreamChart series={series.current} type="line"></StreamChart>
         </div>
-        <div className="col-8">
+        <div className="col-4">
+          <h4>Buffer Health</h4>
+          <canvas
+            width={maxBufferChartTicks * bufferTickWidth}
+            height={bufferHeight}
+            ref={bufferCanvasRef}
+          ></canvas>
+          {/* <StreamChart series={bufferSeries.current} type="heatmap"></StreamChart> */}
+        </div>
+        <div className="col-4">
           <Button variant="primary" onClick={play} className="mr-1">
             Play
           </Button>
