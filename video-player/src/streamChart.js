@@ -15,12 +15,10 @@ function getWidth(series) {
   return widths;
 }
 
-function StreamChart({ series }) {
+function StreamChart({ series, type }) {
   const options = {
     chart: {
       id: "realtime",
-      height: 350,
-      type: "line",
       toolbar: {
         show: false,
       },
@@ -60,6 +58,32 @@ function StreamChart({ series }) {
     legend: {
       show: true,
     },
+    plotOptions: {
+      heatmap: {
+        colorScale: {
+          ranges: [
+            {
+              from: 0,
+              to: 0,
+              color: "#ffffff",
+              name: "buffer",
+            },
+            {
+              from: 1,
+              to: 1,
+              color: "#128FD9",
+              name: "load",
+            },
+            {
+              from: 2,
+              to: 2,
+              color: "#FFB200",
+              name: "skip",
+            },
+          ],
+        },
+      },
+    },
   };
 
   useEffect(() => {
@@ -76,8 +100,8 @@ function StreamChart({ series }) {
     <ReactApexChart
       options={options}
       series={series}
-      type="line"
-      height={350}
+      type={type}
+      height={150}
     />
   );
 }
