@@ -11,12 +11,12 @@ def split_chunks(cfg, is_dryrun=False):
     input = cfg['input']
     width = int(cfg['width'])
     height = int(cfg['height'])
-    v_interval = width // split_mode[1]
-    h_interval = height // split_mode[0]
+    v_interval = width // split_mode[0]
+    h_interval = height // split_mode[1]
     commands = []
     for i in range(split_mode[0]):
         for j in range(split_mode[1]):
-            start = v_interval * j, h_interval * i
+            start = v_interval * i, h_interval * j
             out_place = get_crop_path(cfg, i, j)
 
             command = f'ffmpeg -i {input} ' +\
@@ -46,6 +46,8 @@ def concat_arg(args, i, j):
         if item[1] > 0:
             width = int(item[1])
             height = int(item[2])
+            if height % 2 == 1:
+                height += 1
             bitrates_str += f'-{width}*{height}'
         bitrates_str += ','
         input_name = input.split('/')[-1]
