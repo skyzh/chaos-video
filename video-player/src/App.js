@@ -1,9 +1,12 @@
 import "./App.scss";
 import Container from "react-bootstrap/Container";
+import InputGroup from "react-bootstrap/InputGroup";
+import FormControl from "react-bootstrap/FormControl";
 import ReactHlsPlayer from "react-hls-player";
-import { useRef, useEffect, createRef } from "react";
+import { useRef, useEffect, createRef, useState } from "react";
 import Button from "react-bootstrap/Button";
-import StreamChart from "./streamChart";
+import chroma from "chroma-js";
+import axios from "axios";
 
 import range from "lodash/range";
 import min from "lodash/min";
@@ -19,10 +22,11 @@ import { append } from "./utils.ts";
 
 const maxChartTicks = 10;
 const maxWidthTicks = 60;
-const maxFrameBuffer = 12;
-const maxBufferChartTicks = 160;
-const bufferTickWidth = 3;
+const maxFrameBuffer = 8;
+const maxBufferChartTicks = 300;
+const bufferTickWidth = 5;
 const bufferHeight = 100;
+let lastDrawFrame = -1;
 
 let frames = [];
 let canvasDrop = [];
@@ -35,9 +39,17 @@ function genAbrConfig(idx) {
   };
 }
 
+const qualityColorScale = chroma.scale(["red", "green"]).mode("lab");
+
+function qualityColor(width) {
+  return qualityColorScale(width / 1080)
+    .brighten(1)
+    .hex();
+}
+
 function getFrame(time) {
   // return Math.floor(time * 60)
-  return Math.floor(time * 29.97);
+  return Math.round(time * 29.97);
 }
 
 function fillCanvasRect(canvas, y, x1, xwidth, color) {
@@ -75,6 +87,7 @@ function App() {
   const canvasRef = useRef([]);
   const finalCanvasRef = useRef();
   const bufferCanvasRef = useRef();
+  const qualityCanvasRef = useRef();
 
   const canplay = ({ target }) => {
     playableSegment[target.id] = true;
@@ -171,6 +184,7 @@ function App() {
         const maxFrame = max(frames);
 
         let bufferCanvas = bufferCanvasRef.current;
+        let qualityCanvas = qualityCanvasRef.current;
 
         for (let idx = 0; idx < refs.length; idx++) {
           const frame = frames[idx];
@@ -192,6 +206,16 @@ function App() {
               "#FFFFFF"
             );
           }
+
+          if (qualityCanvas) {
+            fillCanvasRect(
+              qualityCanvas,
+              idx,
+              (maxFrame + 1) % maxBufferChartTicks,
+              10,
+              "#FFFFFF"
+            );
+          }
         }
 
         if (series.current) {
@@ -200,12 +224,14 @@ function App() {
 
         if (finalCanvasRef.current) {
           const idx = minFrame % maxFrameBuffer;
-          // console.log(canvasDrop[idx])
           if (canvasDrop[idx].ready === refs.length) {
-            const ctx = finalCanvasRef.current.getContext("2d");
-            let thisCanvas = canvasRef.current[idx];
-            if (thisCanvas && thisCanvas.current) {
-              ctx.drawImage(thisCanvas.current, 0, 0, width, height);
+            if (lastDrawFrame != minFrame) {
+              const ctx = finalCanvasRef.current.getContext("2d");
+              let thisCanvas = canvasRef.current[idx];
+              if (thisCanvas && thisCanvas.current) {
+                ctx.drawImage(thisCanvas.current, 0, 0, width, height);
+              }
+              lastDrawFrame = minFrame;
             }
           }
         }
@@ -220,7 +246,9 @@ function App() {
     const videoCallback = (idx) => {
       const func = (now, metadata) => {
         const time = metadata.mediaTime;
-        const frame = getFrame(time);
+        // let delta = (metadata.expectedDisplayTime - now) / 1000;
+        let delta = 0;
+        const frame = getFrame(time - delta);
         const lstFrame = frames[idx];
         frames[idx] = frame;
         const ref = refs[idx];
@@ -243,6 +271,19 @@ function App() {
                 "#F6D55C"
               );
             }
+          }
+
+          let qualityCanvas = qualityCanvasRef.current;
+
+          if (qualityCanvas) {
+            let quality = refs[idx].current.videoWidth;
+            fillCanvasRect(
+              qualityCanvas,
+              idx,
+              frame % maxBufferChartTicks,
+              1,
+              qualityColor(quality)
+            );
           }
 
           let thisCanvas = canvasRef.current[frame % maxFrameBuffer];
@@ -316,9 +357,24 @@ function App() {
     };
   });
 
+  useEffect(() => {
+    const int = setInterval(() => {
+      if (realFetchSpeed.current) {
+        axios.get(`/config/get/speed`).then((resp) => {
+          realFetchSpeed.current.innerHTML = `${
+            (parseInt(resp.data) / 1024 / 1024) * 8
+          } Mbps`;
+        });
+      }
+    }, 1000);
+    return () => {
+      clearInterval(int);
+    };
+  });
+
   const video_urls = range(4).map(
     (idx) =>
-      `/data/zelda/chunk_${idx}_0/zelda_trailer_c_${idx}_0.mp4_master.m3u8`
+      `/data/zelda/chunk_0_${idx}/zelda_trailer_c_0_${idx}.mp4_master.m3u8`
   );
   // const video_urls = range(4).map(idx => `/data/genshin/chunk_${idx}_0/genshin_c_${idx}_0.mp4_master.m3u8`)
 
@@ -343,61 +399,88 @@ function App() {
       className="chaos-video-element"
     />
   ));
+
+  const fetchSpeed = useRef();
+  const realFetchSpeed = useRef();
+
+  const setSpeedReq = () => {
+    if (fetchSpeed.current) {
+      axios
+        .get(
+          `/config/set/speed/${(fetchSpeed.current.value * 1024 * 1024) / 8}`
+        )
+        .then(() => console.log("success"));
+    }
+  };
+
   return (
     <Container fluid className="chaos-video-container">
       <div className="row">
         <div className="col">
-          <h4>Composite Video</h4>
-          <canvas width={width} height={height} ref={finalCanvasRef}></canvas>
+          <h5 className="text-center">Composite Video</h5>
+          <canvas
+            width={width}
+            height={height}
+            ref={finalCanvasRef}
+            className="w-100"
+          ></canvas>
           {frameBuffer}
         </div>
         <div className="col">
-          <h4>Original Split Video</h4>
+          <h5 className="text-center">Original Split Video</h5>
           {videoBuffer}
-          <div>
-            <Button variant="primary" onClick={play} className="mr-1">
-              Play
-            </Button>
-            <Button variant="primary" onClick={pause} className="mr-1">
-              Pause
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => seek(10.0)}
-              className="mr-1"
-            >
-              Seek
-            </Button>
-          </div>
         </div>
       </div>
 
       <div className="row mt-3">
-        <div className="col-4">
-          <h4>Video Lag</h4>
-          <StreamChart
-            id="lag"
-            series={series.current}
-            type="line"
-          ></StreamChart>
-        </div>
-        <div className="col-4">
-          <h4>Buffer Health</h4>
+        <div className="col">
+          <h5 className="text-center">Buffer Health</h5>
           <canvas
             width={maxBufferChartTicks * bufferTickWidth}
             height={bufferHeight}
             ref={bufferCanvasRef}
           ></canvas>
         </div>
-        <div className="col-4">
-          <h4>Video Quality</h4>
-          <StreamChart
-            id="quality"
-            series={widthSeries.current}
-            type="line"
-          ></StreamChart>
-          <h4>Video Bandwidth</h4>
-          {/* <StreamChart id="bandwidth" series={qualitySeries.current} type="line"></StreamChart> */}
+      </div>
+      <div className="row mt-3">
+        <div className="col">
+          <h5 className="text-center">Video Quality</h5>
+          <canvas
+            width={maxBufferChartTicks * bufferTickWidth}
+            height={bufferHeight}
+            ref={qualityCanvasRef}
+          ></canvas>
+        </div>
+      </div>
+      <div className="row mt-3">
+        <div className="col-3">
+          <span>Player Control</span>
+          <Button variant="outline-secondary" onClick={play} className="ml-1">
+            Play
+          </Button>
+          <Button variant="outline-secondary" onClick={pause} className="ml-1">
+            Pause
+          </Button>
+          <Button
+            variant="outline-secondary"
+            onClick={() => seek(105.0)}
+            className="ml-1"
+          >
+            Seek
+          </Button>
+        </div>
+        <div className="col-3">
+          <InputGroup>
+            <FormControl placeholder="Speed" ref={fetchSpeed} />
+            <InputGroup.Append>
+              <Button variant="outline-secondary" onClick={setSpeedReq}>
+                Set
+              </Button>
+            </InputGroup.Append>
+          </InputGroup>
+        </div>
+        <div className="col-3">
+          Real speed: <span ref={realFetchSpeed}></span>
         </div>
       </div>
     </Container>

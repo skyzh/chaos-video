@@ -1,0 +1,5 @@
+:80 {
+    reverse_proxy /data/* chaos-proxy:80
+    reverse_proxy /config/* chaos-proxy:80
+    reverse_proxy caddy-blank:80
+}

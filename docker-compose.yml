@@ -1,0 +1,36 @@
+version: "2"
+
+services:
+  caddy-blank:
+    image: caddy:2
+    restart: unless-stopped
+    expose:
+      - 80
+    volumes:
+      - "$PWD/docker-config/Caddyfile-blank:/etc/caddy/Caddyfile:ro"
+      - "$PWD/video-player/build:/srv:ro"
+    networks:
+      - service-net
+
+  chaos-proxy:
+    build:
+      context: ./chaos_proxy
+    restart: unless-stopped
+    expose:
+      - 80
+    networks:
+      - service-net
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - "$PWD/docker-config/Caddyfile-server:/etc/caddy/Caddyfile:ro"
+    networks:
+      - service-net
+
+networks:
+  service-net:

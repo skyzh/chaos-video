@@ -1,0 +1,8 @@
+tornado
+pytest
+pytest-tornado
+requests
+flake8
+autopep8
+aiohttp[speedups]
+ffmpeg-python
