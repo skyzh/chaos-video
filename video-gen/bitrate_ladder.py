@@ -35,7 +35,6 @@ def calc_video_config(inp_bitrate, inp_width, inp_height, inp_t_length, split_mo
 
     split_mode = int(split_mode[0]), int(split_mode[1])
     split_number = split_mode[0] * split_mode[1]
-
     for i in range(len(my_ladder)):
         # chunk_size has the unit of MB
         seconds = min(chunk_size * 8e3 / my_ladder[-1][0], inp_t_length)
@@ -51,6 +50,5 @@ def calc_video_config(inp_bitrate, inp_width, inp_height, inp_t_length, split_mo
         else:
             my_ladder[i][1] = my_ladder[i][1] / split_mode[0]
             my_ladder[i][2] = my_ladder[i][2] / split_mode[1]
-
     print('My bitrate ladder: ', my_ladder)
     return my_ladder
