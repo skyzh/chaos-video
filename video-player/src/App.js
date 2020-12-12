@@ -5,8 +5,8 @@ import FormControl from "react-bootstrap/FormControl";
 import ReactHlsPlayer from "react-hls-player";
 import { useRef, useEffect, createRef, useState } from "react";
 import Button from "react-bootstrap/Button";
-import chroma from 'chroma-js'
-import axios from 'axios'
+import chroma from "chroma-js";
+import axios from "axios";
 
 import range from "lodash/range";
 import min from "lodash/min";
@@ -26,7 +26,7 @@ const maxFrameBuffer = 8;
 const maxBufferChartTicks = 300;
 const bufferTickWidth = 5;
 const bufferHeight = 100;
-let lastDrawFrame = -1
+let lastDrawFrame = -1;
 
 let frames = [];
 let canvasDrop = [];
@@ -39,10 +39,12 @@ function genAbrConfig(idx) {
   };
 }
 
-const qualityColorScale = chroma.scale(['red', 'green']).mode('lab');
+const qualityColorScale = chroma.scale(["red", "green"]).mode("lab");
 
 function qualityColor(width) {
-  return qualityColorScale(width / 1080).brighten(1).hex();
+  return qualityColorScale(width / 1080)
+    .brighten(1)
+    .hex();
 }
 
 function getFrame(time) {
@@ -229,7 +231,7 @@ function App() {
               if (thisCanvas && thisCanvas.current) {
                 ctx.drawImage(thisCanvas.current, 0, 0, width, height);
               }
-              lastDrawFrame = minFrame
+              lastDrawFrame = minFrame;
             }
           }
         }
@@ -387,16 +389,23 @@ function App() {
 
   const setSpeedReq = () => {
     if (fetchSpeed.current) {
-      axios.get(`/config/set/speed/${fetchSpeed.current.value}`).then(() => console.log("success"))
+      axios
+        .get(`/config/set/speed/${fetchSpeed.current.value}`)
+        .then(() => console.log("success"));
     }
-  }
+  };
 
   return (
     <Container fluid className="chaos-video-container">
       <div className="row">
         <div className="col">
           <h5 className="text-center">Composite Video</h5>
-          <canvas width={width} height={height} ref={finalCanvasRef} className="w-100"></canvas>
+          <canvas
+            width={width}
+            height={height}
+            ref={finalCanvasRef}
+            className="w-100"
+          ></canvas>
           {frameBuffer}
         </div>
         <div className="col">
@@ -430,26 +439,25 @@ function App() {
           <span>Player Control</span>
           <Button variant="outline-secondary" onClick={play} className="ml-1">
             Play
-              </Button>
+          </Button>
           <Button variant="outline-secondary" onClick={pause} className="ml-1">
             Pause
-            </Button>
+          </Button>
           <Button
             variant="outline-secondary"
             onClick={() => seek(105.0)}
             className="ml-1"
           >
             Seek
-            </Button>
+          </Button>
         </div>
         <div className="col-3">
           <InputGroup>
-            <FormControl
-              placeholder="Speed"
-              ref={fetchSpeed}
-            />
+            <FormControl placeholder="Speed" ref={fetchSpeed} />
             <InputGroup.Append>
-              <Button variant="outline-secondary" onClick={setSpeedReq}>Set</Button>
+              <Button variant="outline-secondary" onClick={setSpeedReq}>
+                Set
+              </Button>
             </InputGroup.Append>
           </InputGroup>
         </div>
