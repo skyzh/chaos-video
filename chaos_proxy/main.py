@@ -12,8 +12,6 @@ import asyncio
 import logging
 
 if platform.system() == "Windows":
-    import asyncio
-
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 config = {}
@@ -60,9 +58,9 @@ class Server_Speed_limit:
                 return self.Unit_Dispatch_Length
 
     def get_sleep_time(self):
-        delta = self.Interval - \
-            (self.precise_time(self.current_time) -
-             self.precise_time(self.init_time))
+        delta = self.Interval \
+            - (self.precise_time(self.current_time)
+               - self.precise_time(self.init_time))
         if delta > 0:
             return delta
         else:
@@ -141,8 +139,12 @@ class ReverseProxyHandler(tornado.web.RequestHandler):
             reset_prob = float(config.get("reset-prob", 0.005))
 
             await sleep(latency_rand)
-            response = await AsyncHTTPClient().fetch(f"http://{upstream}/{url}",
-                                                     headers=self.request.headers)
+            try:
+                response = await AsyncHTTPClient().fetch(f"http://{upstream}/{url}",
+                                                         headers=self.request.headers)
+            except tornado.httpclient.HTTPError as e:
+                self.set_status(e.response.code)
+                return
             body = response.body
             self.set_status(response.code)
             for k, v in response.headers.get_all():
@@ -176,15 +178,19 @@ class ReverseProxyHandler(tornado.web.RequestHandler):
                     await sleep(int(latency) / 1000)
         else:
             # simple mode
-            logging.info(f"using simple mode")
+            logging.info("using simple mode")
             speed = int(float(config.get("speed",
                                          30000000)) * interval / 1000)
             logging.info(f"speed = {speed}")
             await sleep(int(config.get("latency", 0)) / 1000)
-            response = await AsyncHTTPClient().fetch(f"http://{upstream}/{url}",
-                                                     headers=self.request.headers)
+            try:
+                response = await AsyncHTTPClient().fetch(f"http://{upstream}/{url}",
+                                                         headers=self.request.headers)
+            except tornado.httpclient.HTTPError as e:
+                self.set_status(e.response.code)
+                return
             body = response.body
-            logging.info(f"data fetched from upstream")
+            logging.info("data fetched from upstream")
             self.set_status(response.code)
             for k, v in response.headers.get_all():
                 self.add_header(k, v)
