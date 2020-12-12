@@ -357,6 +357,21 @@ function App() {
     };
   });
 
+  useEffect(() => {
+    const int = setInterval(() => {
+      if (realFetchSpeed.current) {
+        axios.get(`/config/get/speed`).then((resp) => {
+          realFetchSpeed.current.innerHTML = `${
+            (parseInt(resp.data) / 1024 / 1024) * 8
+          } Mbps`;
+        });
+      }
+    }, 1000);
+    return () => {
+      clearInterval(int);
+    };
+  });
+
   const video_urls = range(4).map(
     (idx) =>
       `/data/zelda/chunk_0_${idx}/zelda_trailer_c_0_${idx}.mp4_master.m3u8`
@@ -386,11 +401,14 @@ function App() {
   ));
 
   const fetchSpeed = useRef();
+  const realFetchSpeed = useRef();
 
   const setSpeedReq = () => {
     if (fetchSpeed.current) {
       axios
-        .get(`/config/set/speed/${fetchSpeed.current.value}`)
+        .get(
+          `/config/set/speed/${(fetchSpeed.current.value * 1024 * 1024) / 8}`
+        )
         .then(() => console.log("success"));
     }
   };
@@ -460,6 +478,9 @@ function App() {
               </Button>
             </InputGroup.Append>
           </InputGroup>
+        </div>
+        <div className="col-3">
+          Real speed: <span ref={realFetchSpeed}></span>
         </div>
       </div>
     </Container>

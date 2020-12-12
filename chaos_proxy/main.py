@@ -8,6 +8,8 @@ from datetime import datetime
 import time
 import random
 import platform
+import asyncio
+import logging
 
 if platform.system() == "Windows":
     import asyncio
@@ -118,6 +120,7 @@ class ReverseProxyHandler(tornado.web.RequestHandler):
     #     self.global_limit = Server_Speed_limit(30000000, 1000)
 
     async def get(self, url):
+        logging.info(f"begin transfer {url}")
         mode = config.get("mode", "simple")
         upstream = config.get("upstream",
                               options.upstream)
@@ -173,12 +176,15 @@ class ReverseProxyHandler(tornado.web.RequestHandler):
                     await sleep(int(latency) / 1000)
         else:
             # simple mode
+            logging.info(f"using simple mode")
             speed = int(float(config.get("speed",
                                          30000000)) * interval / 1000)
+            logging.info(f"speed = {speed}")
             await sleep(int(config.get("latency", 0)) / 1000)
             response = await AsyncHTTPClient().fetch(f"http://{upstream}/{url}",
                                                      headers=self.request.headers)
             body = response.body
+            logging.info(f"data fetched from upstream")
             self.set_status(response.code)
             for k, v in response.headers.get_all():
                 self.add_header(k, v)
@@ -193,7 +199,10 @@ class ReverseProxyHandler(tornado.web.RequestHandler):
             while len(body) > 0:
                 bytes_to_write = global_limit.reserve(len(body))
                 self.write(body[:bytes_to_write])
-                await self.flush()
+                try:
+                    await self.flush()
+                except:
+                    break
                 body = body[bytes_to_write:]
                 if global_limit.current_length == 0:
                     global_limit.refresh()
