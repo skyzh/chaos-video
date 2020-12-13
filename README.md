@@ -127,7 +127,3 @@ docker-compose up -d --build
   * `git push origin HEAD -u`
   * 在 GitHub 网页端发 PR
 * PR 合并后，`git checkout master && git pull`，更新本地 master 分支。
-
-## Usage
-
-通过 `runserver.py` 同时启动 chaos-proxy, blank-server, 以及前端 (TBD)。
