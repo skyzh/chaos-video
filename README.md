@@ -1,16 +1,15 @@
 # Chaos Video
 
+Chaos-Video 将视频空间切分，并将这些空间分块以不同码率传输，通过统一的
+ABR 控制器 Multi-ABR 协同工作，从而解决ABR 算法受码率档位限制的问题。
+
+详情可以参阅 slides.pdf 和 report.pdf。
+
 ## Architecture Overview
 
 ```plain
 video-player <---> chaos-proxy <---> blank-server <---> video-gen 生成的视频分块
 ```
-
-其中：
-
-* video-player 由 Chi Zhang 负责。
-* chaos-proxy 由 Shiqu Wu 负责。
-* video-gen 由 Siyuan Bian 负责。
 
 ## Usage
 
@@ -107,9 +106,6 @@ npm run build
 ```bash
 docker-compose up -d --build
 ```
-
-当然，我们的测试服务器 `http://chaos.internal.skyzh.xyz` 也会一直在交大内网提供服务，直至学期结束
-或组长的交大云余额用完。
 
 ## Development Guide
 
