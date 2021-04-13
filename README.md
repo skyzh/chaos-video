@@ -5,6 +5,8 @@ ABR 控制器 Multi-ABR 协同工作，从而解决ABR 算法受码率档位限�
 
 详情可以参阅 slides.pdf 和 report.pdf。
 
+项目是计算机网络课程的小组项目，由 Alex Chi, Siyuan Bian, Shiqu Wu 合作完成。
+
 ## Architecture Overview
 
 ```plain
